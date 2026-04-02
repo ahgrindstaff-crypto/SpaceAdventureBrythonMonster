@@ -1,97 +1,133 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython_stdlib.js"></script>
+import streamlit as st
+import sys
+import io
+import time
+
+# --- APP CONFIG & ANTI-CHEAT ---
+st.set_page_config(page_title="Mission: Code Entry", layout="centered")
+
+# Injected CSS to disable highlighting and right-click
+st.markdown("""
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background-color: #0d1117; color: #c9d1d9; padding: 20px; user-select: none; }
-        #app-container { max-width: 800px; margin: auto; border: 1px border #30363d; padding: 20px; border-radius: 10px; background-color: #161b22; }
-        .instruction { color: #58a6ff; font-weight: bold; margin-bottom: 10px; }
-        .code-display { background: #000; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #30363d; color: #aff5b4; white-space: pre; }
-        input { width: 100%; padding: 10px; background: #0d1117; border: 1px solid #58a6ff; color: white; font-size: 1.1em; }
-        button { background: #238636; color: white; border: none; padding: 10px 20px; margin-top: 10px; cursor: pointer; border-radius: 5px; }
-        button:hover { background: #2ea043; }
-        #console { margin-top: 20px; padding: 10px; background: #000; border-top: 2px solid #30363d; min-height: 100px; color: #79c0ff; }
-        .error { color: #f85149; margin-top: 5px; }
+    /* Disable text selection for everything except input boxes */
+    * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+    input { -webkit-user-select: text !important; -moz-user-select: text !important; user-select: text !important; }
+    code { -webkit-user-select: none !important; }
+    
+    /* Style the instruction box */
+    .stCodeBlock { pointer-events: none; }
     </style>
-</head>
+    <script>
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+    """, unsafe_allow_html=True)
 
-<body onload="brython()">
-
-<div id="app-container">
-    <h2>🚀 Project: Starship Nova Override</h2>
-    <div id="game-area">
-        <p class="instruction">TYPE THIS LINE EXACTLY:</p>
-        <div id="target-code" class="code-display"></div>
-        <input type="text" id="user-input" autocomplete="off" placeholder="Type here...">
-        <div id="error-msg" class="error"></div>
-        <button id="submit-btn">Validate Line</button>
-        <p id="progress"></p>
-    </div>
-
-    <div id="final-area" style="display:none;">
-        <h3 style="color: #238636;">✅ Systems Restored!</h3>
-        <p>Your code is complete. Run it below, then copy it for CodeHS.</p>
-        <button id="run-btn">▶ Run Program</button>
-        <div id="console"></div>
-    </div>
-</div>
-
-<script type="text/python">
-from browser import document, alert, window
-
-# The Master Code List
+# --- THE MASTER CODE LIST ---
+# I have broken your code into specific lines for the students to follow.
 MASTER_CODE = [
     "import time",
     "def slow_print(text):",
-    "    print(text)",
-    "slow_print('--- Welcome to Space Odyssey ---')",
-    "choice1 = input('Investigate or Continue? ').lower()",
+    "    for char in text:",
+    "        print(char, end='', flush=True)",
+    "        time.sleep(0.03)",
+    "    print()",
+    "slow_print('--- Welcome to Space Odyssey: The Nebular Gate ---')",
+    "slow_print('You are Captain of the Starship Nova.')",
+    "slow_print('Your mission: Navigate through the volatile Nebular Gate.')",
+    "print()",
+    "slow_print('Your sensors detect a strange energy reading.')",
+    "choice1 = input('Type investigate or continue: ').lower()",
     "if choice1 == 'investigate':",
-    "    print('You found a beacon!')",
+    "    slow_print('You find an ancient alien beacon.')",
+    "    choice2a = input('Type beam or scan: ').lower()",
+    "    if choice2a == 'beam':",
+    "        slow_print('The surge overloads your core!')",
+    "        slow_print('GAME OVER.')",
+    "    elif choice2a == 'scan':",
+    "        slow_print('You arrive at the Gate prepared.')",
+    "        slow_print('YOU WIN!')",
+    "    else:",
+    "        slow_print('Indecision costs you. GAME OVER.')",
     "elif choice1 == 'continue':",
-    "    print('You pushed forward.')",
+    "    slow_print('A pirate corsair jumps from warp!')",
+    "    choice2b = input('Type fight or outrun: ').lower()",
+    "    if choice2b == 'fight':",
+    "        slow_print('You are stranded near the Gate.')",
+    "    elif choice2b == 'outrun':",
+    "        slow_print('YOU WIN: Fast and victorious!')",
+    "    else:",
+    "        slow_print('The pirates take you. GAME OVER.')",
     "else:",
-    "    print('Invalid choice.')"
+    "    slow_print('Invalid command. GAME OVER.')"
 ]
 
-state = {"index": 0, "typed": []}
+# --- SESSION STATE INITIALIZATION ---
+if 'line_idx' not in st.session_state:
+    st.session_state.line_idx = 0
+if 'typed_lines' not in st.session_state:
+    st.session_state.typed_lines = []
+if 'game_finished' not in st.session_state:
+    st.session_state.game_finished = False
 
-def update_ui():
-    if state["index"] < len(MASTER_CODE):
-        document["target-code"].text = MASTER_CODE[state["index"]]
-        document["progress"].text = f"Line {state['index'] + 1} of {len(MASTER_CODE)}"
-        document["user-input"].value = ""
-    else:
-        document["game-area"].style.display = "none"
-        document["final-area"].style.display = "block"
+# --- UI DISPLAY ---
+st.title("🚀 Starship Nova: Systems Override")
+st.write("Captain, the ship's computer is offline. You must manually re-type the navigation protocols.")
 
-def check_line(ev):
-    user_val = document["user-input"].value
-    target_val = MASTER_CODE[state["index"]]
+if not st.session_state.game_finished:
+    total = len(MASTER_CODE)
+    current = st.session_state.line_idx
+    target = MASTER_CODE[current]
+
+    # Progress bar for the students
+    st.progress(current / total)
+    st.write(f"**Progress: Line {current + 1} of {total}**")
+
+    # The instruction box (Non-copyable)
+    st.info("💡 **Type the following line exactly (watch your spaces!):**")
+    st.code(target, language='python')
+
+    # Input Box
+    user_input = st.text_input("Enter Code:", key=f"input_{current}", autocomplete="off")
+
+    if st.button("Submit Line"):
+        # Check for exact match (including leading spaces for indentation)
+        if user_input == target:
+            st.session_state.typed_lines.append(user_input)
+            if st.session_state.line_idx + 1 < total:
+                st.session_state.line_idx += 1
+                st.rerun()
+            else:
+                st.session_state.game_finished = True
+                st.rerun()
+        else:
+            st.error("❌ Syntax error or incorrect indentation. Try again!")
+            st.warning("Hint: Check for quotes, parentheses, and leading spaces.")
+
+else:
+    # --- FINAL COMPILER STAGE ---
+    st.success("✅ Navigation Protocol Restored!")
+    full_code = "\n".join(st.session_state.typed_lines)
     
-    if user_val == target_val:
-        state["typed"].append(user_val)
-        state["index"] += 1
-        document["error-msg"].text = ""
-        update_ui()
-    else:
-        document["error-msg"].text = "❌ Typo detected! Check spaces and spelling."
+    st.write("### Your Completed Program")
+    st.code(full_code, language='python')
 
-def run_code(ev):
-    document["console"].text = ""
-    full_code = "\n".join(state["typed"])
-    try:
-        # Brython's exec runs the code in the browser context
-        exec(full_code)
-    except Exception as e:
-        document["console"].text = f"Error: {e}"
-
-document["submit-btn"].bind("click", check_line)
-document["run-btn"].bind("click", run_code)
-update_ui()
-</script>
-
-</body>
-</html>
+    if st.button("▶️ Run Program"):
+        st.write("---")
+        # Capturing stdout to show it in the app
+        output_capture = io.StringIO()
+        sys.stdout = output_capture
+        
+        try:
+            # We use a preset choice to demonstrate it works, 
+            # as standard 'input()' blocks web threads.
+            # In a real classroom, they'd now copy this to CodeHS!
+            exec(full_code, {'time': time, 'input': lambda x: 'continue'})
+            result = output_capture.getvalue()
+            st.text(result)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
+        finally:
+            sys.stdout = sys.__stdout__
+        
+        st.balloons()
+        st.info("Now, copy your code and paste it into the CodeHS Sandbox to play the full version!")
