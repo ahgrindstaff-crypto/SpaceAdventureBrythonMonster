@@ -5,47 +5,42 @@
     <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython_stdlib.js"></script>
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; padding: 40px; user-select: none; }
-        #app-container { max-width: 750px; margin: auto; background: #161b22; padding: 30px; border-radius: 12px; border: 1px solid #30363d; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        .label { color: #58a6ff; font-weight: bold; margin-bottom: 10px; font-size: 0.9em; }
-        .target-box { 
+        body { background-color: #0d1117; color: white; font-family: monospace; padding: 20px; }
+        #app-container { max-width: 700px; margin: auto; background: #161b22; padding: 25px; border: 2px solid #30363d; border-radius: 8px; }
+        
+        /* THE TARGET TEXT - Simplified for visibility */
+        #target-code { 
             background: #000; 
+            color: #ffff00 !important; /* Bright Yellow for maximum contrast */
             padding: 20px; 
-            font-family: 'Courier New', monospace; 
-            color: #ffffff; /* Explicit white text */
-            margin: 10px 0 25px 0; 
-            white-space: pre; 
-            border-left: 5px solid #238636; 
-            font-size: 1.2em;
+            font-size: 1.5em; 
+            border: 1px solid #58a6ff;
+            margin: 15px 0;
             display: block;
+            min-height: 1.2em;
         }
-        input { 
-            width: 100%; padding: 15px; box-sizing: border-box; background: #0d1117; 
-            color: #ffffff; border: 2px solid #30363d; font-family: 'Courier New', monospace; 
-            font-size: 1.1em; border-radius: 6px; outline: none;
-        }
-        input:focus { border-color: #58a6ff; }
-        button { background: #238636; color: white; border: none; padding: 12px 24px; cursor: pointer; margin-top: 15px; border-radius: 6px; font-weight: bold; }
-        #console { background: black; color: #79c0ff; padding: 15px; margin-top: 20px; min-height: 100px; font-family: 'Courier New', monospace; white-space: pre-wrap; border-radius: 6px; border: 1px solid #30363d; }
-        .error { color: #f85149; margin-top: 10px; font-weight: bold; }
-        .progress { color: #8b949e; margin-top: 15px; font-size: 0.9em; }
+
+        input { width: 100%; padding: 15px; font-size: 1.2em; background: #0d1117; color: white; border: 1px solid #58a6ff; box-sizing: border-box; }
+        button { background: #238636; color: white; border: none; padding: 15px 30px; margin-top: 10px; cursor: pointer; font-size: 1em; border-radius: 4px; }
+        #console { background: black; color: #79c0ff; padding: 15px; margin-top: 20px; border: 1px solid #30363d; min-height: 50px; }
+        .error { color: #ff7b72; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body onload="brython()">
     <div id="app-container">
-        <h1 style="margin-top:0;">🚀 Starship Nova: System Override</h1>
-        <div id="game-area">
-            <div class="label">TYPE THIS LINE EXACTLY (WATCH SPACES):</div>
-            <div id="target-code" class="target-box"></div>
-            <input type="text" id="user-input" autocomplete="off" placeholder="Type here and press Enter...">
-            <div id="error-msg" class="error"></div>
-            <button id="submit-btn">Validate Line</button>
-            <div id="progress" class="progress"></div>
-        </div>
+        <h1 style="color:#58a6ff;">🚀 STARSHIP NOVA OVERRIDE</h1>
+        <p>Type the line below exactly as it appears:</p>
+        
+        <div id="target-code">import time</div>
+        
+        <input type="text" id="user-input" autocomplete="off" placeholder="Type here...">
+        <div id="error-msg" class="error"></div>
+        <button id="submit-btn">VALIDATE LINE</button>
+        <p id="progress" style="color:#8b949e;">Line 1 of 12</p>
+
         <div id="final-area" style="display:none;">
-            <h2 style="color: #238636;">✅ Navigation Restored</h2>
-            <p>Run your program to check for bugs, then copy-paste into CodeHS.</p>
-            <button id="run-btn" style="background:#1f6feb;">▶ Run Program</button>
+            <h2 style="color:#2ea043;">✅ SYSTEMS READY</h2>
+            <button id="run-btn">RUN PROGRAM</button>
             <div id="console"></div>
         </div>
     </div>
@@ -53,7 +48,6 @@
 <script type="text/python">
 from browser import document, sys
 
-# Master List
 MASTER_CODE = [
     "import time",
     "def slow_print(text):",
@@ -77,47 +71,36 @@ sys.stdout.write = write
 def update_ui():
     if state["idx"] < len(MASTER_CODE):
         document["target-code"].text = MASTER_CODE[state["idx"]]
-        document["progress"].text = f"PROGRESS: Line {state['idx']+1} of {len(MASTER_CODE)}"
+        document["progress"].text = f"Line {state['idx']+1} of {len(MASTER_CODE)}"
         document["user-input"].value = ""
         document["user-input"].focus()
     else:
-        document["game-area"].style.display = "none"
-        document["final-area"].style.display = "block"
+        document["app-container"].innerHTML = "<h1>✅ Mission Complete!</h1><p>Copy your code for CodeHS:</p><pre style='background:#000;padding:20px;color:#0f0;'>" + "\\n".join(state["lines"]) + "</pre>"
 
 def validate(ev):
-    user_input = document["user-input"].value
-    target = MASTER_CODE[state["idx"]]
-    # check exact match but rstrip to be kind about trailing spaces
-    if user_input.rstrip() == target.rstrip():
-        state["lines"].append(user_input)
+    val = document["user-input"].value
+    goal = MASTER_CODE[state["idx"]]
+    if val.rstrip() == goal.rstrip():
+        state["lines"].append(val)
         state["idx"] += 1
         document["error-msg"].text = ""
         update_ui()
     else:
-        document["error-msg"].text = "❌ Syntax/Indentation error. Try again!"
+        document["error-msg"].text = "❌ Check your spelling and indentation!"
 
 def handle_keys(ev):
     if ev.keyCode == 9: # Tab
         ev.preventDefault()
         s = ev.target.selectionStart
-        v = ev.target.value
-        ev.target.value = v[:s] + "    " + v[s:]
+        ev.target.value = ev.target.value[:s] + "    " + ev.target.value[s:]
         ev.target.selectionStart = ev.target.selectionEnd = s + 4
     if ev.keyCode == 13: # Enter
         validate(None)
 
-def run_program(ev):
-    document["console"].text = ""
-    code = "\n".join(state["lines"])
-    try:
-        exec(code)
-    except Exception as e:
-        document["console"].text = f"Error: {e}"
-
 document["user-input"].bind("keydown", handle_keys)
 document["submit-btn"].bind("click", validate)
-document["run-btn"].bind("click", run_program)
 
+# Set the very first target on startup
 update_ui()
 </script>
 </body>
