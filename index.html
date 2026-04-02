@@ -2,87 +2,96 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython_stdlib.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython_stdlib.js"></script>
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; user-select: none; }
-        #app-container { max-width: 700px; margin: auto; background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
-        .target { background: #000; padding: 15px; font-family: monospace; color: #aff5b4; margin: 10px 0; white-space: pre; border-left: 4px solid #238636; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; background: #0d1117; color: white; border: 1px solid #58a6ff; font-family: monospace; }
-        button { background: #238636; color: white; border: none; padding: 10px 20px; cursor: pointer; margin-top: 10px; border-radius: 4px; }
-        #console { background: black; color: #79c0ff; padding: 10px; margin-top: 20px; min-height: 50px; font-family: monospace; white-space: pre-wrap; }
+        body { font-family: 'Courier New', Courier, monospace; background-color: #0d1117; color: #c9d1d9; padding: 20px; user-select: none; }
+        #app-container { max-width: 800px; margin: auto; border: 1px border #30363d; padding: 20px; border-radius: 10px; background-color: #161b22; }
+        .instruction { color: #58a6ff; font-weight: bold; margin-bottom: 10px; }
+        .code-display { background: #000; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #30363d; color: #aff5b4; white-space: pre; }
+        input { width: 100%; padding: 10px; background: #0d1117; border: 1px solid #58a6ff; color: white; font-size: 1.1em; }
+        button { background: #238636; color: white; border: none; padding: 10px 20px; margin-top: 10px; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #2ea043; }
+        #console { margin-top: 20px; padding: 10px; background: #000; border-top: 2px solid #30363d; min-height: 100px; color: #79c0ff; }
+        .error { color: #f85149; margin-top: 5px; }
     </style>
 </head>
+
 <body onload="brython()">
-    <div id="app-container">
-        <h1>🚀 Space Mission</h1>
-        <div id="game-area">
-            <div id="target-code" class="target"></div>
-            <input type="text" id="user-input" autocomplete="off" placeholder="Type here...">
-            <button id="submit-btn">Validate Line</button>
-            <p id="progress"></p>
-        </div>
-        <div id="final-area" style="display:none;">
-            <h2>✅ Complete!</h2>
-            <button id="run-btn">▶ Run Program</button>
-            <div id="console"></div>
-        </div>
+
+<div id="app-container">
+    <h2>🚀 Project: Starship Nova Override</h2>
+    <div id="game-area">
+        <p class="instruction">TYPE THIS LINE EXACTLY:</p>
+        <div id="target-code" class="code-display"></div>
+        <input type="text" id="user-input" autocomplete="off" placeholder="Type here...">
+        <div id="error-msg" class="error"></div>
+        <button id="submit-btn">Validate Line</button>
+        <p id="progress"></p>
     </div>
 
-<script type="text/python">
-from browser import document, sys
+    <div id="final-area" style="display:none;">
+        <h3 style="color: #238636;">✅ Systems Restored!</h3>
+        <p>Your code is complete. Run it below, then copy it for CodeHS.</p>
+        <button id="run-btn">▶ Run Program</button>
+        <div id="console"></div>
+    </div>
+</div>
 
+<script type="text/python">
+from browser import document, alert, window
+
+# The Master Code List
 MASTER_CODE = [
     "import time",
     "def slow_print(text):",
     "    print(text)",
-    "slow_print('Welcome to Space Odyssey')",
+    "slow_print('--- Welcome to Space Odyssey ---')",
     "choice1 = input('Investigate or Continue? ').lower()",
     "if choice1 == 'investigate':",
-    "    print('Found a beacon!')",
+    "    print('You found a beacon!')",
+    "elif choice1 == 'continue':",
+    "    print('You pushed forward.')",
     "else:",
-    "    print('Moving on.')"
+    "    print('Invalid choice.')"
 ]
 
-state = {"idx": 0, "lines": []}
+state = {"index": 0, "typed": []}
 
-def write(data):
-    document["console"].text += str(data)
-sys.stdout.write = write
-
-def update():
-    if state["idx"] < len(MASTER_CODE):
-        document["target-code"].text = MASTER_CODE[state["idx"]]
-        document["progress"].text = f"Line {state['idx']+1} of {len(MASTER_CODE)}"
+def update_ui():
+    if state["index"] < len(MASTER_CODE):
+        document["target-code"].text = MASTER_CODE[state["index"]]
+        document["progress"].text = f"Line {state['index'] + 1} of {len(MASTER_CODE)}"
         document["user-input"].value = ""
-        document["user-input"].focus()
     else:
         document["game-area"].style.display = "none"
         document["final-area"].style.display = "block"
 
-def check(ev):
-    if document["user-input"].value.rstrip() == MASTER_CODE[state["idx"]].rstrip():
-        state["lines"].append(document["user-input"].value)
-        state["idx"] += 1
-        update()
+def check_line(ev):
+    user_val = document["user-input"].value
+    target_val = MASTER_CODE[state["index"]]
+    
+    if user_val == target_val:
+        state["typed"].append(user_val)
+        state["index"] += 1
+        document["error-msg"].text = ""
+        update_ui()
+    else:
+        document["error-msg"].text = "❌ Typo detected! Check spaces and spelling."
 
-def run(ev):
+def run_code(ev):
     document["console"].text = ""
-    exec("\n".join(state["lines"]))
+    full_code = "\n".join(state["typed"])
+    try:
+        # Brython's exec runs the code in the browser context
+        exec(full_code)
+    except Exception as e:
+        document["console"].text = f"Error: {e}"
 
-def tab_fix(ev):
-    if ev.keyCode == 9:
-        ev.preventDefault()
-        s = ev.target.selectionStart
-        ev.target.value = ev.target.value[:s] + "    " + ev.target.value[s:]
-        ev.target.selectionStart = ev.target.selectionEnd = s + 4
-    if ev.keyCode == 13:
-        check(None)
-
-document["user-input"].bind("keydown", tab_fix)
-document["submit-btn"].bind("click", check)
-document["run-btn"].bind("click", run)
-update()
+document["submit-btn"].bind("click", check_line)
+document["run-btn"].bind("click", run_code)
+update_ui()
 </script>
+
 </body>
 </html>
