@@ -110,3 +110,25 @@ else:
     
     st.write("### Your Completed Program")
     st.code(full_code, language='python')
+
+    if st.button("▶️ Run Program"):
+        st.write("---")
+        # Capturing stdout to show it in the app
+        output_capture = io.StringIO()
+        sys.stdout = output_capture
+        
+        try:
+            # We use a preset choice to demonstrate it works, 
+            # as standard 'input()' blocks web threads.
+            # In a real classroom, they'd now copy this to CodeHS!
+            exec(full_code, {'time': time, 'input': lambda x: 'continue'})
+            result = output_capture.getvalue()
+            st.text(result)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
+        finally:
+            sys.stdout = sys.__stdout__
+        
+        st.balloons()
+        st.info("Now, copy your code and paste it into the CodeHS Sandbox to play the full version!")
+
