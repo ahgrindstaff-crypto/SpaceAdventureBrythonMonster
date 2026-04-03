@@ -3,20 +3,11 @@ import sys
 import io
 import time
 
-# --- APP CONFIG ---
+# --- 1. APP CONFIG & ANTI-CHEAT ---
 st.set_page_config(page_title="Mission: Code Entry", layout="centered")
 
-# --- SESSION STATE ---
-if 'line_idx' not in st.session_state:
-    st.session_state.line_idx = 0
-if 'typed_lines' not in st.session_state:
-    st.session_state.typed_lines = []
-if 'game_finished' not in st.session_state:
-    st.session_state.game_finished = False
-
-# --- ANTI-CHEAT CSS ---
-# This CSS only disables selection while the game is active.
-if not st.session_state.game_finished:
+# This CSS disables text selection ONLY until the student finishes the mission
+if 'game_finished' not in st.session_state or not st.session_state.game_finished:
     st.markdown("""
         <style>
         * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
@@ -27,10 +18,9 @@ if not st.session_state.game_finished:
         </script>
         """, unsafe_allow_html=True)
 else:
-    # Re-enable selection when finished
     st.markdown("<style>* { user-select: text !important; }</style>", unsafe_allow_html=True)
 
-# --- THE MASTER CODE LIST ---
+# --- 2. THE MASTER CODE LIST ---
 MASTER_CODE = [
     "import time",
     "def slow_print(text):",
@@ -48,7 +38,15 @@ MASTER_CODE = [
     "    slow_print('Invalid command. GAME OVER.')"
 ]
 
-# --- UI DISPLAY ---
+# --- 3. SESSION STATE ---
+if 'line_idx' not in st.session_state:
+    st.session_state.line_idx = 0
+if 'typed_lines' not in st.session_state:
+    st.session_state.typed_lines = []
+if 'game_finished' not in st.session_state:
+    st.session_state.game_finished = False
+
+# --- 4. UI DISPLAY ---
 st.title("🚀 Starship Nova: Systems Override")
 
 if not st.session_state.game_finished:
@@ -57,15 +55,14 @@ if not st.session_state.game_finished:
     target = MASTER_CODE[current]
 
     st.progress(current / total)
-    st.info(f"**Step {current + 1} of {total}:** Type the line below exactly.")
-    
-    # We use a code block for the target, but CSS prevents copying it
+    st.write(f"**Progress: Line {current + 1} of {total}**")
+
+    st.info("💡 **Type the following line exactly (watch your spaces!):**")
     st.code(target, language='python')
 
-    # Input Box
     user_input = st.text_input("Enter Code:", key=f"input_{current}", autocomplete="off")
 
-    if st.button("Check Line"):
+    if st.button("Submit Line"):
         if user_input == target:
             st.session_state.typed_lines.append(user_input)
             if st.session_state.line_idx + 1 < total:
@@ -75,25 +72,22 @@ if not st.session_state.game_finished:
                 st.session_state.game_finished = True
                 st.rerun()
         else:
-            st.error("❌ Typo or Indentation Error! (Hint: Check leading spaces)")
-
+            st.error("❌ Error! Check your spacing and spelling.")
 else:
-    # --- FINAL SUCCESS STAGE ---
+    # --- 5. COMPLETION STAGE ---
     st.success("✅ Navigation Protocol Restored!")
     full_code = "\n".join(st.session_state.typed_lines)
     
     st.write("### 📋 Instructions for CodeHS")
-    st.write("1. Highlight and copy all the code in the box below.")
-    st.write("2. Paste it into your **CodeHS Python 3 Sandbox**.")
+    st.write("Highlight the code below, copy it, and paste it into the CodeHS Sandbox.")
     
-    # Text area is more reliable for students to copy from than a code block
+    # Text area makes it very easy for 8th graders to copy
     st.text_area("Your Completed Code:", value=full_code, height=300)
 
-    if st.button("▶️ Test Program (Partial Run)"):
+    if st.button("▶️ Test Program"):
         output_capture = io.StringIO()
         sys.stdout = output_capture
         try:
-            # Note: Interactive 'input' doesn't work in Streamlit, so we simulate a choice
             exec(full_code, {'time': time, 'input': lambda x: 'continue'})
             st.code(output_capture.getvalue())
         except Exception as e:
