@@ -3,14 +3,23 @@ import sys
 import io
 import time
 
-# --- 1. APP CONFIG & ANTI-CHEAT ---
+# --- 1. APP CONFIG ---
 st.set_page_config(page_title="Mission: Code Entry", layout="centered")
 
-# This CSS disables text selection ONLY until the student finishes the mission
-if 'game_finished' not in st.session_state or not st.session_state.game_finished:
+# --- 2. SESSION STATE (Keep track of progress) ---
+if 'line_idx' not in st.session_state:
+    st.session_state.line_idx = 0
+if 'typed_lines' not in st.session_state:
+    st.session_state.typed_lines = []
+if 'game_finished' not in st.session_state:
+    st.session_state.game_finished = False
+
+# --- 3. ANTI-CHEAT CSS ---
+# Only lock the screen if the game isn't finished
+if not st.session_state.game_finished:
     st.markdown("""
         <style>
-        * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+        * { -webkit-user-select: none; user-select: none; }
         input { -webkit-user-select: text !important; user-select: text !important; }
         </style>
         <script>
@@ -20,7 +29,7 @@ if 'game_finished' not in st.session_state or not st.session_state.game_finished
 else:
     st.markdown("<style>* { user-select: text !important; }</style>", unsafe_allow_html=True)
 
-# --- 2. THE MASTER CODE LIST ---
+# --- 4. THE MASTER CODE LIST ---
 MASTER_CODE = [
     "import time",
     "def slow_print(text):",
@@ -38,15 +47,7 @@ MASTER_CODE = [
     "    slow_print('Invalid command. GAME OVER.')"
 ]
 
-# --- 3. SESSION STATE ---
-if 'line_idx' not in st.session_state:
-    st.session_state.line_idx = 0
-if 'typed_lines' not in st.session_state:
-    st.session_state.typed_lines = []
-if 'game_finished' not in st.session_state:
-    st.session_state.game_finished = False
-
-# --- 4. UI DISPLAY ---
+# --- 5. UI DISPLAY ---
 st.title("🚀 Starship Nova: Systems Override")
 
 if not st.session_state.game_finished:
@@ -56,8 +57,8 @@ if not st.session_state.game_finished:
 
     st.progress(current / total)
     st.write(f"**Progress: Line {current + 1} of {total}**")
-
     st.info("💡 **Type the following line exactly (watch your spaces!):**")
+    
     st.code(target, language='python')
 
     user_input = st.text_input("Enter Code:", key=f"input_{current}", autocomplete="off")
@@ -72,16 +73,15 @@ if not st.session_state.game_finished:
                 st.session_state.game_finished = True
                 st.rerun()
         else:
-            st.error("❌ Error! Check your spacing and spelling.")
+            st.error("❌ Error! Spacing or spelling is off. Try again.")
 else:
-    # --- 5. COMPLETION STAGE ---
     st.success("✅ Navigation Protocol Restored!")
     full_code = "\n".join(st.session_state.typed_lines)
     
     st.write("### 📋 Instructions for CodeHS")
     st.write("Highlight the code below, copy it, and paste it into the CodeHS Sandbox.")
     
-    # Text area makes it very easy for 8th graders to copy
+    # Use a text area for the final copy-paste
     st.text_area("Your Completed Code:", value=full_code, height=300)
 
     if st.button("▶️ Test Program"):
