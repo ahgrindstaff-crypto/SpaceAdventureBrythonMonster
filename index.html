@@ -3,65 +3,10 @@ import sys
 import io
 import time
 
-# --- APP CONFIG & ANTI-CHEAT ---
+# --- APP CONFIG ---
 st.set_page_config(page_title="Mission: Code Entry", layout="centered")
 
-# Injected CSS to disable highlighting and right-click
-st.markdown("""
-    <style>
-    /* Disable text selection for everything except input boxes */
-    * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-    input { -webkit-user-select: text !important; -moz-user-select: text !important; user-select: text !important; }
-    code { -webkit-user-select: none !important; }
-    
-    /* Style the instruction box */
-    .stCodeBlock { pointer-events: none; }
-    </style>
-    <script>
-    document.addEventListener('contextmenu', event => event.preventDefault());
-    </script>
-    """, unsafe_allow_html=True)
-
-# --- THE MASTER CODE LIST ---
-# I have broken your code into specific lines for the students to follow.
-MASTER_CODE = [
-    "import time",
-    "def slow_print(text):",
-    "    for char in text:",
-    "        print(char, end='', flush=True)",
-    "        time.sleep(0.03)",
-    "    print()",
-    "slow_print('--- Welcome to Space Odyssey: The Nebular Gate ---')",
-    "slow_print('You are Captain of the Starship Nova.')",
-    "slow_print('Your mission: Navigate through the volatile Nebular Gate.')",
-    "print()",
-    "slow_print('Your sensors detect a strange energy reading.')",
-    "choice1 = input('Type investigate or continue: ').lower()",
-    "if choice1 == 'investigate':",
-    "    slow_print('You find an ancient alien beacon.')",
-    "    choice2a = input('Type beam or scan: ').lower()",
-    "    if choice2a == 'beam':",
-    "        slow_print('The surge overloads your core!')",
-    "        slow_print('GAME OVER.')",
-    "    elif choice2a == 'scan':",
-    "        slow_print('You arrive at the Gate prepared.')",
-    "        slow_print('YOU WIN!')",
-    "    else:",
-    "        slow_print('Indecision costs you. GAME OVER.')",
-    "elif choice1 == 'continue':",
-    "    slow_print('A pirate corsair jumps from warp!')",
-    "    choice2b = input('Type fight or outrun: ').lower()",
-    "    if choice2b == 'fight':",
-    "        slow_print('You are stranded near the Gate.')",
-    "    elif choice2b == 'outrun':",
-    "        slow_print('YOU WIN: Fast and victorious!')",
-    "    else:",
-    "        slow_print('The pirates take you. GAME OVER.')",
-    "else:",
-    "    slow_print('Invalid command. GAME OVER.')"
-]
-
-# --- SESSION STATE INITIALIZATION ---
+# --- SESSION STATE ---
 if 'line_idx' not in st.session_state:
     st.session_state.line_idx = 0
 if 'typed_lines' not in st.session_state:
@@ -69,28 +14,58 @@ if 'typed_lines' not in st.session_state:
 if 'game_finished' not in st.session_state:
     st.session_state.game_finished = False
 
+# --- ANTI-CHEAT CSS ---
+# This CSS only disables selection while the game is active.
+if not st.session_state.game_finished:
+    st.markdown("""
+        <style>
+        * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+        input { -webkit-user-select: text !important; user-select: text !important; }
+        </style>
+        <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        </script>
+        """, unsafe_allow_html=True)
+else:
+    # Re-enable selection when finished
+    st.markdown("<style>* { user-select: text !important; }</style>", unsafe_allow_html=True)
+
+# --- THE MASTER CODE LIST ---
+MASTER_CODE = [
+    "import time",
+    "def slow_print(text):",
+    "    for char in text:",
+    "        print(char, end='', flush=True)",
+    "        time.sleep(0.03)",
+    "    print()",
+    "slow_print('--- Welcome to Space Odyssey ---')",
+    "choice1 = input('Investigate or Continue? ').lower()",
+    "if choice1 == 'investigate':",
+    "    slow_print('You found an ancient alien beacon.')",
+    "elif choice1 == 'continue':",
+    "    slow_print('A pirate corsair jumps from warp!')",
+    "else:",
+    "    slow_print('Invalid command. GAME OVER.')"
+]
+
 # --- UI DISPLAY ---
 st.title("🚀 Starship Nova: Systems Override")
-st.write("Captain, the ship's computer is offline. You must manually re-type the navigation protocols.")
 
 if not st.session_state.game_finished:
     total = len(MASTER_CODE)
     current = st.session_state.line_idx
     target = MASTER_CODE[current]
 
-    # Progress bar for the students
     st.progress(current / total)
-    st.write(f"**Progress: Line {current + 1} of {total}**")
-
-    # The instruction box (Non-copyable)
-    st.info("💡 **Type the following line exactly (watch your spaces!):**")
+    st.info(f"**Step {current + 1} of {total}:** Type the line below exactly.")
+    
+    # We use a code block for the target, but CSS prevents copying it
     st.code(target, language='python')
 
     # Input Box
     user_input = st.text_input("Enter Code:", key=f"input_{current}", autocomplete="off")
 
-    if st.button("Submit Line"):
-        # Check for exact match (including leading spaces for indentation)
+    if st.button("Check Line"):
         if user_input == target:
             st.session_state.typed_lines.append(user_input)
             if st.session_state.line_idx + 1 < total:
@@ -100,34 +75,28 @@ if not st.session_state.game_finished:
                 st.session_state.game_finished = True
                 st.rerun()
         else:
-            st.error("❌ Syntax error or incorrect indentation. Try again!")
-            st.warning("Hint: Check for quotes, parentheses, and leading spaces.")
+            st.error("❌ Typo or Indentation Error! (Hint: Check leading spaces)")
 
 else:
-    # --- FINAL COMPILER STAGE ---
+    # --- FINAL SUCCESS STAGE ---
     st.success("✅ Navigation Protocol Restored!")
     full_code = "\n".join(st.session_state.typed_lines)
     
-    st.write("### Your Completed Program")
-    st.code(full_code, language='python')
+    st.write("### 📋 Instructions for CodeHS")
+    st.write("1. Highlight and copy all the code in the box below.")
+    st.write("2. Paste it into your **CodeHS Python 3 Sandbox**.")
+    
+    # Text area is more reliable for students to copy from than a code block
+    st.text_area("Your Completed Code:", value=full_code, height=300)
 
-    if st.button("▶️ Run Program"):
-        st.write("---")
-        # Capturing stdout to show it in the app
+    if st.button("▶️ Test Program (Partial Run)"):
         output_capture = io.StringIO()
         sys.stdout = output_capture
-        
         try:
-            # We use a preset choice to demonstrate it works, 
-            # as standard 'input()' blocks web threads.
-            # In a real classroom, they'd now copy this to CodeHS!
+            # Note: Interactive 'input' doesn't work in Streamlit, so we simulate a choice
             exec(full_code, {'time': time, 'input': lambda x: 'continue'})
-            result = output_capture.getvalue()
-            st.text(result)
+            st.code(output_capture.getvalue())
         except Exception as e:
-            st.error(f"Execution Error: {e}")
+            st.error(f"Error: {e}")
         finally:
             sys.stdout = sys.__stdout__
-        
-        st.balloons()
-        st.info("Now, copy your code and paste it into the CodeHS Sandbox to play the full version!")
